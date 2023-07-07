@@ -100,7 +100,7 @@ pipeline {
                 withAWS(credentials: 'beanstalk', region: 'eu-west-1') {
                 sh "aws s3 cp ./target/vprofile-v2.war s3://myprosezer/${env.BUILD_ID}-${env.BUILD_TIMESTAMP}-vprofile-v2.war"
                 sh "aws elasticbeanstalk create-application-version --application-name ${BEANSTALK_APP} --version-label ${BEANSTALK_VERSION} --source-bundle S3Bucket=${AWS_BUCKET_NAME},S3Key=${env.BUILD_ID}-${env.BUILD_TIMESTAMP}-vprofile-v2.war"
-                sh "aws elasticbeanstalk update-environment --environment-name ${BEANSTALK_VERSION}  --version-label ${BEANSTALK_VERSION}"
+                sh "aws elasticbeanstalk update-environment --environment-name ${BEANSTALK_ENV}  --version-label ${BEANSTALK_VERSION}"
             }
             }
             
