@@ -25,6 +25,7 @@ pipeline {
         BEANSTALK_APP = "vprofile"
         BEANSTALK_ENV = "Vprofile-env"
         BEANSTALK_VERSION = "${env.BUILD_ID}"
+        AWS_BUCKET_NAME = "myprosezer"
 
     }
 
