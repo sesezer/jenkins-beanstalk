@@ -22,6 +22,10 @@ pipeline {
         SONARSCANNER = 'sonarscanner'
         NEXUS_GROUP_ID = "QA"
         NEXUS_ARTIFACT = "vproapp"
+        BEANSTALK_APP = "vprofile"
+        BEANSTALK_ENV = "Vprofile-env"
+        BEANSTALK_VERSION = "${env.BUILD_ID}"
+
     }
 
     stages {
@@ -90,38 +94,16 @@ pipeline {
             }
         }
         
-        stage('create test env') {
-            steps{
-                ansiblePlaybook([
-                        playbook: './ansible/tomcat_setup.yml',
-                        inventory: './ansible/hosts',
-                        credentialsId: 'ansible-ssh-key',
-                        colorized: true,
-                        disableHostKeyChecking: true])
+        stage('deploy to beanstalk') {
+            withAWS(credentials: 'beanstalk', region: 'eu-west-1') {
+                sh "aws s3 cp ./target/vprofile-v2.war s3://myprosezer/${env.BUILD_ID}-${env.BUILD_TIMESTAMP}-vprofile-v2.war"
+                sh "aws elasticbeanstalk create-application-version --application-name ${BEANSTALK_APP} \
+    --version-label ${BEANSTALK_VERSION} --source-bundle S3Bucket=${AWS_BUCKET_NAME},S3Key=${env.BUILD_ID}-${env.BUILD_TIMESTAMP}-vprofile-v2.war"
+                sh "aws elasticbeanstalk update-environment --environment-name ${BEANSTALK_VERSION} \
+    --version-label ${BEANSTALK_VERSION}"
             }
         }
-        stage('deploy latest artifact') {
-            steps {
-                 
-                ansiblePlaybook([
-                    playbook: './ansible/vpro-app-setup.yml',
-                    inventory: './ansible/hosts',
-                    credentialsId: 'ansible-ssh-key',
-                    colorized: true,
-                    disableHostKeyChecking: true,
-                    extraVars: [
-                        USER: "${NEXUS_USER}",
-                        PASS: "${NEXUS_PASS}",
-                        nexusip: "${NEXUSIP}",
-                        reponame: "${NEXUS_REPO}",
-                        groupid: "${NEXUS_GROUP_ID}",
-                        artifactid: "${NEXUS_ARTIFACT}",
-                        build: "${env.BUILD_ID}",
-                        time: "${env.BUILD_TIMESTAMP}"
-                    ]
-                ])
-            }
-        }
+        
         
     }
     post {
